@@ -928,3 +928,10 @@ class WebhookInfo(BaseModel):
     last_error_message: Optional[str] = None
     max_connections: Optional[int] = None
     allowed_updates: Union[list, str, None] = None
+
+
+class MenuButton(BaseModel):
+    type: str
+    text: str
+    web_app: Optional[WebAppInfo]
+
