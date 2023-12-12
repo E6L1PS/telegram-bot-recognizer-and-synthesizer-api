@@ -33,6 +33,8 @@ def mq_reply_callback(ch, method, properties, body):
                           ))
 
 
+print("Worker started.")
+
 while True:
     channel.basic_consume(queue='to_worker',
                           auto_ack=True,
