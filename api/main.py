@@ -22,6 +22,8 @@ def main() -> None:
     dp.include_router(router)
     dp.startup.register(on_startup)
     bot = Bot(TOKEN)
+
+    bot.set_chat_menu_button()
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,

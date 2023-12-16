@@ -4,30 +4,32 @@ import logging
 import os
 import sys
 
+from pyht import Client
+from pyht.client import TTSOptions
 import aio_pika
-import aiofiles
-import whisper
 from aio_pika.patterns import RPC
 
-model = whisper.load_model("small")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
+options = TTSOptions(voice="s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json")
+client = Client(
+    user_id=os.environ.get("PLAY_HT_USER_ID"),
+    api_key=os.environ.get("PLAY_HT_API_KEY"),
+)
 
-async def process_stt_transcribe(*, filename, data):
-    logging.info("STT transcribe started...")
 
-    async with aiofiles.open(filename, 'wb') as f:
-        await f.write(base64.b64decode(data))
-        result = await loop.run_in_executor(None, model.transcribe, filename)
+async def process_tts_transcribe(*, text):
+    logging.info("TTS transcribe started...")
 
-    logging.info(f"Result text: {result['text']}")
-
+    audio_bytes = bytearray()
+    for chunk in client.tts(text, options):
+        audio_bytes += chunk
     return {
-        'text': result['text']
+        'data': base64.b64encode(audio_bytes).decode('utf-8')
     }
 
 
@@ -36,7 +38,7 @@ async def main():
     channel = await connection.channel()
     rpc = await RPC.create(channel)
 
-    await rpc.register('process_stt_transcribe', process_stt_transcribe)
+    await rpc.register('process_tts_transcribe', process_tts_transcribe)
 
     return connection
 
