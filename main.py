@@ -15,12 +15,13 @@ from pyht.client import TTSOptions
 from scemas import Update
 
 # load_dotenv()
-# TG_API = os.getenv("BOT_API_KEY")
-TG_API = "ВСТАВИТЬ"
+TG_API = os.getenv("BOT_API_KEY")
 
 app = FastAPI()
 options = TTSOptions(voice="s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json")
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+
+host = os.getenv("RABBIT_MQ_HOST", "localhost")
+connection = pika.BlockingConnection(pika.ConnectionParameters(host))
 channel = connection.channel()
 channel.queue_declare(queue='to_worker')
 channel.queue_declare(queue='from_worker')
@@ -31,6 +32,7 @@ def mq_reply_callback(ch, method, properties, body):
 
     reply_message(int(message['chat_id']), int(message['reply_to_message_id']), message.text)
 
+
 # test button
 @app.get("/hey")
 async def test(request: Request):
@@ -40,6 +42,7 @@ async def test(request: Request):
 
 @app.post("/")
 async def reed_root(request: Request):
+    print("Request in /")
     json = await request.json()
     print(json)
 
@@ -97,7 +100,6 @@ async def reed_root(request: Request):
                           auto_ack=True,
                           on_message_callback=mq_reply_callback)
 
-
     return 200
 
 
@@ -116,7 +118,6 @@ async def send_message(chat_id: int, message: str):
 async def reply_message(chat_id: int, reply_to_message_id: int, message: str):
     uri = f'https://api.telegram.org/bot{TG_API}/sendMessage'
     async with aiohttp.ClientSession() as session:
-
         async with session.post(uri,
                                 data={
                                     'chat_id': chat_id,
@@ -140,6 +141,7 @@ async def send_audio(chat_id: int, path: str):
         async with session.post(uri, data=form_data) as response:
             res = await response.json()
             print(res)
+
 
 async def reply_audio(chat_id: int, reply_to_message_id: int, path: str):
     uri = f'https://api.telegram.org/bot{TG_API}/sendAudio'

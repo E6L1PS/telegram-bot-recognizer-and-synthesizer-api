@@ -2,12 +2,17 @@ import whisper
 import json
 import pika
 import base64
+import os
 
+print("Loading ML model")
 model = whisper.load_model("small")
-
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+print("Model loaded")
+host = os.getenv("RABBIT_MQ_HOST", "localhost")
+print("Trying to access rabbit at ", host)
+connection = pika.BlockingConnection(pika.ConnectionParameters(host))
 channel = connection.channel()
-
+channel.queue_declare(queue='to_worker')
+channel.queue_declare(queue='from_worker')
 
 def mq_reply_callback(ch, method, properties, body):
     message = json.loads(body)
