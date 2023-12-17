@@ -17,27 +17,41 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-TTS_transcribe = False
+tts_mode_enabled = False
 
 
 @router.message(filters.CommandStart())
 async def command_start_handler(message: Message) -> None:
+    kb = [
+        [
+            types.KeyboardButton(text="STT mode"),
+            types.KeyboardButton(text="STS mode")
+        ]
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True,
+        input_field_placeholder="Choice mode"
+    )
+
     await message.answer(f"Hi {message.from_user.full_name}, im a RecognizerSynthesizerBot.\n"
-                         "I can convert your voice message to text.\n"
-                         "I'm waiting for your voice messages...")
+                         "I can convert your voice message to text and synthesize your voice.\n"
+                         "I'm waiting for your voice messages...", reply_markup=keyboard)
 
 
 @router.message(filters.Command("stt"))
+@router.message(F.text == "STT mode")
 async def command_stt_handler(message: Message) -> None:
-    global TTS_transcribe
-    TTS_transcribe = False
+    global tts_mode_enabled
+    tts_mode_enabled = False
     await message.answer("STT mode is on.")
 
 
 @router.message(filters.Command("sts"))
+@router.message(F.text == "STS mode")
 async def command_stt_handler(message: Message) -> None:
-    global TTS_transcribe
-    TTS_transcribe = True
+    global tts_mode_enabled
+    tts_mode_enabled = True
     await message.answer("STS mode is on. Only English language is supported.")
 
 
@@ -64,25 +78,25 @@ async def get_audio(message: types.Message, bot: Bot) -> None:
                                                 "filename": filename,
                                                 "data": audio_encoded
                                             })
-                logging.info(stt_result['text'])
+                logging.info(stt_result)
 
-            if TTS_transcribe:
+            if tts_mode_enabled:
                 async with connection.channel() as channel:
                     logging.info("TTS processing...")
                     rpc = await RPC.create(channel)
                     tts_data_result = await rpc.call('process_tts_transcribe',
                                                      kwargs={
-                                                         "text": stt_result['text']
+                                                         "text": stt_result
                                                      })
 
                     tts_filepath = f"./{filename}.mp3"
                 async with aiofiles.open(tts_filepath, 'wb') as f:
-                    await f.write(base64.b64decode(tts_data_result['data']))
+                    await f.write(base64.b64decode(tts_data_result))
 
                 audio = FSInputFile(f"./{filename}.mp3")
                 await message.answer_voice(audio)
             else:
-                await message.answer(stt_result['text'])
+                await message.answer(stt_result)
     except TypeError:
         await message.answer("Nice try!")
 

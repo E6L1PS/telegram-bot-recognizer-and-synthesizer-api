@@ -4,10 +4,10 @@ import logging
 import os
 import sys
 
-from pyht import Client
-from pyht.client import TTSOptions
 import aio_pika
 from aio_pika.patterns import RPC
+from pyht import Client
+from pyht.client import TTSOptions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,9 +28,8 @@ async def process_tts_transcribe(*, text):
     audio_bytes = bytearray()
     for chunk in client.tts(text, options):
         audio_bytes += chunk
-    return {
-        'data': base64.b64encode(audio_bytes).decode('utf-8')
-    }
+
+    return base64.b64encode(audio_bytes).decode('utf-8')
 
 
 async def main():

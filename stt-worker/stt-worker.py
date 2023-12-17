@@ -26,9 +26,7 @@ async def process_stt_transcribe(*, filename, data):
 
     logging.info(f"Result text: {result['text']}")
 
-    return {
-        'text': result['text']
-    }
+    return result['text']
 
 
 async def main():

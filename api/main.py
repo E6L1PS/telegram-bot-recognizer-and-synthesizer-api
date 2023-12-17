@@ -3,6 +3,7 @@ import os
 import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
@@ -15,6 +16,13 @@ WEBHOOK_PATH = "/webhook"
 
 async def on_startup(bot: Bot) -> None:
     await bot.set_webhook(f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}")
+    main_menu_commands = [
+        BotCommand(command='/stt',
+                   description='Enable audio to text mode'),
+        BotCommand(command='/sts',
+                   description='Enable audio to synthesized audio conversion mode'),
+    ]
+    await bot.set_my_commands(main_menu_commands)
 
 
 def main() -> None:
@@ -22,8 +30,6 @@ def main() -> None:
     dp.include_router(router)
     dp.startup.register(on_startup)
     bot = Bot(TOKEN)
-
-    bot.set_chat_menu_button()
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,
