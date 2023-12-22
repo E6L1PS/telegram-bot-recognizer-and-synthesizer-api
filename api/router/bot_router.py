@@ -57,7 +57,7 @@ async def command_translate_handler(message: Message) -> None:
     global should_translate
     should_translate = not should_translate
     await message.answer("Auto translate to en is enabled."
-                         if is_shuffle_enabled else "Auto translate to en is disabled.")
+                         if should_translate else "Auto translate to en is disabled.")
 
 
 @router.message(filters.Command("rand"))
@@ -99,17 +99,18 @@ async def get_audio(message: types.Message, bot: Bot) -> None:
                 async with connection.channel() as channel:
                     logging.info("TTS processing...")
                     rpc = await RPC.create(channel)
-                    tts_data_result = await rpc.call('process_tts_transcribe',
-                                                     kwargs={
-                                                         "is_shuffle_enabled": is_shuffle_enabled,
-                                                         "text": stt_result
-                                                     })
+                    tts_data_result = await rpc.call(
+                        'process_tts_pyht' if should_translate else 'process_tts_silero',
+                        kwargs={
+                            "is_shuffle_enabled": is_shuffle_enabled,
+                            "text": stt_result
+                        })
 
-                    tts_filepath = f"./{filename}.mp3"
+                tts_filepath = f"./{filename}.mp3"
                 async with aiofiles.open(tts_filepath, 'wb') as f:
                     await f.write(base64.b64decode(tts_data_result))
 
-                audio = FSInputFile(f"./{filename}.mp3")
+                audio = FSInputFile(tts_filepath)
                 await message.answer_voice(audio)
             else:
                 await message.answer(stt_result)
