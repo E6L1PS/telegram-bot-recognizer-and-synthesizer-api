@@ -1,7 +1,9 @@
 import asyncio
 import base64
+import json
 import logging
 import os
+import random
 import sys
 
 import aio_pika
@@ -15,15 +17,23 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-options = TTSOptions(voice="s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json")
+with open('voices.json') as f:
+    data = json.load(f)
+
+voices_id = [entity['id'] for entity in data]
+default_voice = "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json"
+
 client = Client(
     user_id=os.environ.get("PLAY_HT_USER_ID"),
     api_key=os.environ.get("PLAY_HT_API_KEY"),
 )
 
 
-async def process_tts_transcribe(*, text):
+async def process_tts_transcribe(*, is_shuffle_enabled, text):
     logging.info("TTS transcribe started...")
+    if is_shuffle_enabled:
+        random.shuffle(voices_id)
+    options = TTSOptions(voice=voices_id[-1])
 
     audio_bytes = bytearray()
     for chunk in client.tts(text, options):

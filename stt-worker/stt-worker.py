@@ -8,7 +8,9 @@ import aio_pika
 import aiofiles
 import whisper
 from aio_pika.patterns import RPC
+from translate import Translator
 
+translator = Translator(from_lang="ru", to_lang="en")
 model = whisper.load_model("small")
 logging.basicConfig(
     level=logging.INFO,
@@ -17,7 +19,7 @@ logging.basicConfig(
 )
 
 
-async def process_stt_transcribe(*, filename, data):
+async def process_stt_transcribe(*, should_translate, filename, data):
     logging.info("STT transcribe started...")
 
     async with aiofiles.open(filename, 'wb') as f:
@@ -25,8 +27,13 @@ async def process_stt_transcribe(*, filename, data):
         result = await loop.run_in_executor(None, model.transcribe, filename)
 
     logging.info(f"Result text: {result['text']}")
+    text = result['text']
+    if should_translate:
+        logging.info("Translate started...")
+        text = translator.translate(text)
+        logging.info("Translate: ", text)
 
-    return result['text']
+    return text
 
 
 async def main():

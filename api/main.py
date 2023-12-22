@@ -17,10 +17,12 @@ WEBHOOK_PATH = "/webhook"
 async def on_startup(bot: Bot) -> None:
     await bot.set_webhook(f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}")
     main_menu_commands = [
-        BotCommand(command='/stt',
-                   description='Enable audio to text mode'),
         BotCommand(command='/sts',
                    description='Enable audio to synthesized audio conversion mode'),
+        BotCommand(command='/en',
+                   description='Enable auto translation of your voice into English'),
+        BotCommand(command='/rand',
+                   description='Enable random voice mode'),
     ]
     await bot.set_my_commands(main_menu_commands)
 
