@@ -18,14 +18,17 @@ logging.basicConfig(
 )
 
 tts_mode_enabled = False
+should_translate = True
+is_shuffle_enabled = True
 
 
 @router.message(filters.CommandStart())
 async def command_start_handler(message: Message) -> None:
     kb = [
         [
-            types.KeyboardButton(text="STT mode"),
-            types.KeyboardButton(text="STS mode")
+            types.KeyboardButton(text="Speech synthesis mode"),
+            types.KeyboardButton(text="Auto translate"),
+            types.KeyboardButton(text="Random voice"),
         ]
     ]
     keyboard = types.ReplyKeyboardMarkup(
@@ -39,20 +42,31 @@ async def command_start_handler(message: Message) -> None:
                          "I'm waiting for your voice messages...", reply_markup=keyboard)
 
 
-@router.message(filters.Command("stt"))
-@router.message(F.text == "STT mode")
-async def command_stt_handler(message: Message) -> None:
-    global tts_mode_enabled
-    tts_mode_enabled = False
-    await message.answer("STT mode is on.")
-
-
 @router.message(filters.Command("sts"))
-@router.message(F.text == "STS mode")
-async def command_stt_handler(message: Message) -> None:
+@router.message(F.text == "Speech synthesis mode")
+async def command_synthesis_handler(message: Message) -> None:
     global tts_mode_enabled
-    tts_mode_enabled = True
-    await message.answer("STS mode is on. Only English language is supported.")
+    tts_mode_enabled = not tts_mode_enabled
+    await message.answer("Speech synthesis mode is enabled."
+                         if tts_mode_enabled else "Speech synthesis is disabled. Only text convert.")
+
+
+@router.message(filters.Command("en"))
+@router.message(F.text == "Auto translate")
+async def command_translate_handler(message: Message) -> None:
+    global should_translate
+    should_translate = not should_translate
+    await message.answer("Auto translate to en is enabled."
+                         if is_shuffle_enabled else "Auto translate to en is disabled.")
+
+
+@router.message(filters.Command("rand"))
+@router.message(F.text == "Random voice")
+async def command_rand_handler(message: Message) -> None:
+    global is_shuffle_enabled
+    is_shuffle_enabled = not is_shuffle_enabled
+    await message.answer("Random voice is enabled."
+                         if is_shuffle_enabled else "Random voice is disabled.")
 
 
 @router.message(F.audio | F.voice)
@@ -75,6 +89,7 @@ async def get_audio(message: types.Message, bot: Bot) -> None:
                 rpc = await RPC.create(channel)
                 stt_result = await rpc.call('process_stt_transcribe',
                                             kwargs={
+                                                "should_translate": should_translate,
                                                 "filename": filename,
                                                 "data": audio_encoded
                                             })
@@ -86,6 +101,7 @@ async def get_audio(message: types.Message, bot: Bot) -> None:
                     rpc = await RPC.create(channel)
                     tts_data_result = await rpc.call('process_tts_transcribe',
                                                      kwargs={
+                                                         "is_shuffle_enabled": is_shuffle_enabled,
                                                          "text": stt_result
                                                      })
 
